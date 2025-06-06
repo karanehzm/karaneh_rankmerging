@@ -1,0 +1,2 @@
+l3_score_test.txt filter=lfs diff=lfs merge=lfs -text
+scores/*.txt filter=lfs diff=lfs merge=lfs -text
