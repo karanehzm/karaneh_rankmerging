@@ -5,7 +5,6 @@ from methods import cra_scores, l3_scores
 import networkx as nx
 from utils import * 
 
-from methods import l3_scores, cra_scores
 
 
 
@@ -279,36 +278,3 @@ def generate_l3_testing_file(output_file="l3_testing.txt"):
 
 
 
-
-"""
-
-"we compute a score for every pair of nodes that is not connected in the training graph"
-
-data_path = "/Users/karanehzolfaghari/Desktop/PPI_code/codes_karaneh_ppi/data_repository/heinetal-rec.txt"
-
-graph = load_data(data_path)
-# print(graph)
-print(read_ael(data_path))
-# val_edges = load_edges("/Users/karanehzolfaghari/Desktop/PPI_code/codes_karaneh_ppi/Complementarity_rankMerging/val_edges.txt")
-# train_edges = load_edges("/Users/karanehzolfaghari/Desktop/PPI_code/codes_karaneh_ppi/Complementarity_rankMerging/train_edges.txt")
-# # ael = el_to_ael(train_edges + val_edges)
-# ael = read_ael(graph)
-
-# #--------------- to run CRA and L3 scoring -------------
-# # we have already loaded the validation edges and computed scores:
-# val_edges = set([tuple(map(int, line.strip().split())) for line in open("val_edges.txt")])
-
-# # Run CRA and L3 scoring
-# cra_scores_dict = cra_scores(potential_adj_list(ael), ael)
-# l3_scores_dict = l3_scores(ael)
-
-# # Generate learning files
-# generate_rank_file(cra_scores_dict, val_edges, "cra_learning.txt")
-# generate_rank_file(l3_scores_dict, val_edges, "l3_learning.txt")
-
-
-# # # Generate learning files
-# generate_rank_file(cra_scores_dict, val_edges, "cra_learning.txt")
-# generate_rank_file(l3_scores_dict, val_edges, "l3_learning.txt")
-
-"""

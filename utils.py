@@ -1,8 +1,11 @@
 from methods import *
 from pathlib import Path
+from config import *
 import matplotlib.pyplot as plt
 import pandas as pd
-from sklearn.metrics import precision_recall_curve
+import random
+import numpy as np
+from sklearn.metrics import precision_recall_curve, auc
 import os
 
 # some general functions -------------------------------------------------------
@@ -41,7 +44,6 @@ def read_ael(data):
     return graph_ael
 
 
-
 def count_nodes(graph):
     nodes = []
     for pairs in graph:
@@ -73,22 +75,34 @@ def ael_to_el(ael):
 
    
 
-def el_to_ael(graph):
-    """ transform graph to ael """
-    ael = dict()
-    for node,neigh in graph:
-        if node in ael:
-            if neigh not in ael[node]:
-                ael[node].append(neigh)
-        else:
-            ael[node] = [neigh]
-        if neigh in ael:
-            if node not in ael[neigh]:
-                ael[neigh].append(node)
-        else:
-            ael[neigh] = [node]
-    return ael
+# def el_to_ael(graph):
+#     """ transform graph to ael """
+#     ael = dict()
+#     for node,neigh in graph:
+#         if node in ael:
+#             if neigh not in ael[node]:
+#                 ael[node].append(neigh)
+#         else:
+#             ael[node] = [neigh]
+#         if neigh in ael:
+#             if node not in ael[neigh]:
+#                 ael[neigh].append(node)
+#         else:
+#             ael[neigh] = [node]
+#     return ael
 
+def el_to_ael(graph):
+    """Transform edge list to adjacency list (ael) with string node IDs and undirected structure"""
+    ael = dict()
+    for u, v in graph:
+        u, v = str(u), str(v)  # 🔑 ensure consistent format
+        if u not in ael:
+            ael[u] = set()
+        if v not in ael:
+            ael[v] = set()
+        ael[u].add(v)
+        ael[v].add(u)
+    return ael
 
 def load_edges(path):
     with open(path) as f:
@@ -136,7 +150,7 @@ def compute_scaling_factor(learning_file, test_file):
 
 
 
-def write_candidate_pairs_train(candidate_pairs_train, dataset, file_path):
+def write_candidate_pairs_train(candidate_pairs_train, dataset, file_path, force = False):
     """
     Writes candidate pairs of train set (list of (u, v)) to a text file.
     """
@@ -144,13 +158,15 @@ def write_candidate_pairs_train(candidate_pairs_train, dataset, file_path):
     file_name = f"candidate_train_{dataset}.txt"
     full_path = file_path / file_name
     file_path.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
-
+    if full_path.exists() and not force: 
+        print(f"File {full_path} already exists. Skipping write.")
+    
     with open(full_path, "w") as f:
         for u, v in candidate_pairs_train:
             f.write(f"{u} {v}\n")  # Write candidate pairs as edges
 
 
-def write_candidate_adj_train(candidate_adj, dataset, file_path):
+def write_candidate_adj_train(candidate_adj, dataset, file_path, force = False):
     "writes candidate pairs of train set as an adjacency list "
 
     file_path = Path(file_path)
@@ -158,12 +174,15 @@ def write_candidate_adj_train(candidate_adj, dataset, file_path):
     full_path = file_path / file_name
     file_path.mkdir(parents=True, exist_ok = True) #to ensure if the directory exists
 
+    if full_path.exists() and not force: 
+        print(f"File {full_path} already exists. Skipping write.")
+
     with open(full_path, "w") as f:
         for node in candidate_adj.keys():
             f.write(f"{node} {candidate_adj[node]}\n")
     
      
-def write_candidate_pairs_test(candidate_pairs_test, dataset, file_path):
+def write_candidate_pairs_test(candidate_pairs_test, dataset, file_path, force = False):
     "Writes candidate pairs of test set (list of (u, v)) to a text file"
    
     file_path = Path(file_path)
@@ -171,12 +190,16 @@ def write_candidate_pairs_test(candidate_pairs_test, dataset, file_path):
     full_path = file_path / file_name
     file_path.mkdir(parents=True, exist_ok = True) #to ensure if the directory exists
 
+    if full_path.exists() and not force: 
+        print(f"File {full_path} already exists. Skipping write.")
+       
+    
     with open(full_path, "w") as f:
         for u, v in candidate_pairs_test:
             f.write(f"{u} {v}\n")
 
 
-def write_candidate_adj_test(candidate_adj, dataset, file_path):
+def write_candidate_adj_test(candidate_adj, dataset, file_path, force = False):
     "writes candidate pairs of test set as an adjacency list "
 
     file_path = Path(file_path)
@@ -184,6 +207,10 @@ def write_candidate_adj_test(candidate_adj, dataset, file_path):
     full_path = file_path / file_name
     file_path.mkdir(parents=True, exist_ok = True) #to ensure if the directory exists
 
+    if full_path.exists() and not force: 
+        print(f"File {full_path} already exists. Skipping write.")
+       
+    
     with open(full_path, "w") as f:
         for node in candidate_adj.keys():
             f.write(f"{node} {candidate_adj[node]}\n")
@@ -221,12 +248,15 @@ def read_candidate_adj_list(filepath):
 
 
 
-def write_cra_score_to_file(cra_scores, path, fileName):
+def write_cra_score_to_file(cra_scores, path, fileName, force = False):
     path = Path(path)
     full_path = path / fileName
     path.mkdir(parents=True, exist_ok = True) #to ensure if the directory exists
+    if full_path.exists() and not force:
+        print(f"File {full_path} already exists. Skipping write.")
+       
+    
     sorted_scores = sorted(cra_scores.items(), key = lambda x : x[1], reverse= True)
-
     with open(full_path, "w") as f:
         for (u,v), score in sorted_scores:
             line = f"{u} {v} {score}\n"
@@ -234,10 +264,14 @@ def write_cra_score_to_file(cra_scores, path, fileName):
 
 
 
-def write_l3_score_to_file(l3_scores, path, fileName):
+def write_l3_score_to_file(l3_scores, path, fileName, force = False):
     path = Path(path)
     full_path = path / fileName
     path.mkdir(parents = True, exist_ok = True) #to ensure if the directory exists
+    if full_path.exists() and not force:
+        print(f"File {full_path} already exists. Skipping write.")
+       
+    
     sorted_scores = sorted(l3_scores.items(), key = lambda x: x[1] , reverse = True)
 
     with open( full_path, "w") as f:
@@ -275,6 +309,7 @@ def create_score_learning_txt_file(score_file, val_edges_file, learn_file):
                         to_write =  f"{edge[0]} {edge[1]} {label}\n"
                         # print(f"edge {edge} does NOT exist and we need to label it as 0")
                         f3.write(to_write)
+
 
 
 def combining_files(first_file, second_file, output_file):
@@ -320,149 +355,319 @@ def create_score_testing_txt_file(score_file, test_edge_file, test_file):
 
 
 
-def evaluate_from_rankmerging_output(filename, top_k=None):
-    total_true_edges = 0
-    predicted_true = 0
-    TP = 0
 
-    with open(filename, "r") as f:
-        lines = f.readlines()
 
-    if top_k:
-        lines = lines[:top_k]
-
-    for line in lines:
-        parts = line.strip().split()
-        if len(parts) < 3:
-            continue
-        u, v, score = int(parts[0]), int(parts[1]), int(parts[2])
-        if score == 1:
-            TP += 1
-
-    # Total number of ground-truth positives in the whole file
-    for line in lines:
-        parts = line.strip().split()
-        if len(parts) < 3:
-            continue
-        if int(parts[2]) == 1:
-            total_true_edges += 1
-
-    precision = TP / len(lines) if len(lines) > 0 else 0
-    recall = TP / total_true_edges if total_true_edges > 0 else 0
-
-    return precision, recall
+def read_score_file_as_sorted_list(path):
+    """Reads (u, v, score) lines and returns sorted list of ((u,v), score) tuples descending by score"""
+    score_list = []
+    with open(path, "r") as f:
+        for line in f:
+            u, v, score = line.strip().split()
+            # score_list.append(((int(u), int(v)), float(score)))
+            score_list.append((((u),(v)), float(score)))
+    return sorted(score_list, key=lambda x: x[1], reverse=True)
 
 
 
 
 
-def evaluate_precision_recall_f1(filename, top_k=100):
-    with open(filename, "r") as f:
-        lines = [line.strip().split() for line in f if len(line.strip().split()) == 3]
-
-    lines = lines[:top_k]
-
-    total_true_links = sum(1 for line in lines if int(line[2]) == 1)
-
-    TP = 0
-    for line in lines:
-        if int(line[2]) == 1:
-            TP += 1
-
-    precision = TP / top_k if top_k > 0 else 0
-    recall = TP / total_true_links if total_true_links > 0 else 0
-
-    if precision + recall == 0:
-        f1_score = 0
-    else:
-        f1_score = 2 * (precision * recall) / (precision + recall)
-
-    return precision, recall, f1_score, TP
+def plot_all_pr_curves(y_trues, y_scores, labels, filename):
+    plt.figure(figsize=(10, 8))
+    for y_true, y_score, label in zip(y_trues, y_scores, labels):
+        precision, recall, _ = precision_recall_curve(y_true, y_score)
+        plt.plot(recall, precision, label=label)
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision-Recall Comparison')
+    plt.legend()
+    plt.grid()
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
+    plt.savefig(filename)
+    plt.show()
 
 
-"function to plot the precision, recall and f1"
-def evaluate_precision_recall_f1_curve(filename, max_k=100):
-    precisions = []
-    recalls = []
-    f1_scores = []
-    ks = []
-
-    with open(filename, "r") as f:
-        lines = [line.strip().split() for line in f if len(line.strip().split()) == 3]
-
-    total_true_links = sum(1 for line in lines if int(line[2]) == 1)
-
-    TP = 0
-    for i in range(1, min(len(lines), max_k) + 1):
-        u, v, label = lines[i - 1]
-        if int(label) == 1:
-            TP += 1
-        precision = TP / i
-        recall = TP / total_true_links if total_true_links > 0 else 0
-        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
-
-        ks.append(i)
-        precisions.append(precision)
-        recalls.append(recall)
-        f1_scores.append(f1)
-
-    return ks, precisions, recalls, f1_scores
+def sorting_scores(score_tab):
+    """ generate a list of pairs by decreasing score value from a dictionary of scores of the form d[(i,j)]=score """
+    # pre_sorting =  sorted(score_tab.items(), key=lambda v: random.random())
+    items = list(score_tab.items())
+    random.shuffle(items)
+    # sorted_scores = sorted(pre_sorting, key=lambda x: x[1], reverse=True)  
+    return sorted(items, key=lambda x: x[1], reverse=True)
 
 
 
-
-def read_rank_file(filepath, score_type="rank"):
-    y_true = []
-    y_scores = []
-
-    with open(filepath, 'r') as f:
-        lines = f.readlines()
-
-    for i, line in enumerate(lines):
-        parts = line.strip().split()
-        if len(parts) == 3:
-            try:
-                label = int(parts[2])
-                if label in [0, 1]:
-                    y_true.append(label)
-                    if score_type == "rank":
-                        # Inverse rank as score: highest score = first line
-                        y_scores.append(len(lines) - i)
-                    elif score_type == "file_score":
-                        # If file already has real-valued scores (e.g., CRA/L3N)
-                        y_scores.append(float(parts[2]))
-            except ValueError:
-                continue
-
-    return y_true, y_scores
-
+def tp_fp(score_lst, test_ael, num_pred_max, step):
+    """ generate a triplet of lists with the number of predictions, number of TP predictions , number of FP predictions every step until num_pred_max """
+    list_tp = []
+    list_fp = []
+    list_pred = []
+   
+    num_pred = 0
+    num_tp = 0
+    num_fp = 0
+    
+    for pred in score_lst[:num_pred_max+1] :
+        (i,j), score = pred
+        if i in test_ael and j in test_ael[i]:
+            num_tp += 1
+        else:
+            num_fp += 1
+        num_pred +=1
+    
+        if (num_pred-1) % step == 0:
+            list_tp.append(num_tp)
+            list_fp.append(num_fp)
+            list_pred.append(num_pred)
+    return list_pred, list_tp, list_fp
+    
 
 
 
-def plot_precision_recall_curves(rank_merging_path, cra_path, l3n_path):
-    # Read RankMerging output
-    y_true_rank, y_scores_rank = read_rank_file(rank_merging_path, score_type="rank")
+def pr_rc(list_pred, list_tp, num_edges):
+    """ generate a couple of lists with the precision and recall for every number of prediction"""
+    list_pr = []
+    list_rc = []
+    for i in range(len(list_pred)):
+        list_pr.append(list_tp[i]/list_pred[i])
+        list_rc.append(list_tp[i]/num_edges)
+    return list_rc, list_pr  
 
-    # Read CRA scores 
-    y_true_cra, y_scores_cra = read_rank_file(cra_path, score_type="rank")
 
-    # Read L3N scores
-    y_true_l3n, y_scores_l3n = read_rank_file(l3n_path, score_type="rank")
+def tp_fp_rank(rank_file_path, test_set_path, num_pred_max, step):
+    """
+    Generate cumulative prediction stats (num predictions, TP, FP)
+    every `step` from a RankMerging output file.
+    """
 
-    # Compute curves
-    prec_rank, rec_rank, _ = precision_recall_curve(y_true_rank, y_scores_rank)
-    prec_cra, rec_cra, _ = precision_recall_curve(y_true_cra, y_scores_cra)
-    prec_l3n, rec_l3n, _ = precision_recall_curve(y_true_l3n, y_scores_l3n)
+    # Load ground truth test set into a dictionary-like structure
+    test_set = set()
+    with open(test_set_path, "r") as f:
+        for line in f:
+            i, j = map(int, line.strip().split())
+            test_set.add((i, j))
+            test_set.add((j, i))  # assume undirected graph
 
-    # Plot
-    plt.figure(figsize=(8,6))
-    plt.plot(rec_rank, prec_rank, label="RankMerging", linewidth=2)
-    plt.plot(rec_cra, prec_cra, label="CRA", linewidth=2)
-    plt.plot(rec_l3n, prec_l3n, label="L3N", linewidth=2)
+    list_tp = []
+    list_fp = []
+    list_pred = []
+
+    num_tp = 0
+    num_fp = 0
+    num_pred = 0
+
+    with open(rank_file_path, "r") as f:
+        for line in f:
+            if num_pred >= num_pred_max:
+                break
+
+            i, j, label = line.strip().split()
+            pair = (int(i), int(j))
+            label = int(label)
+
+            if label == 1 and pair in test_set:
+                num_tp += 1
+            else:
+                num_fp += 1
+
+            num_pred += 1
+
+            if (num_pred - 1) % step == 0:
+                list_pred.append(num_pred)
+                list_tp.append(num_tp)
+                list_fp.append(num_fp)
+
+    return list_pred, list_tp, list_fp
+
+
+
+
+def show_pr (tab1, tab2):
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision-Recall Curve')
+    plt.grid()
+    plt.xticks(np.arange(0, 1, 0.05))
+    plt.yticks(np.arange(0, 1, 0.25))
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
+    plt.plot (tab1 , tab2 , marker = '.' , linewidth=1)
+    plt.show()
+
+def register_image (filename, tab1, tab2):
+    plt.figure(figsize=(12,12))
+    plt.plot (tab1 , tab2 , marker = '.' , linewidth=1)
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision-Recall Curve')
+    plt.grid()
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)  
+    plt.xticks(np.arange(0, 1.01, 0.05))
+    plt.yticks(np.arange(0, 1.01, 0.25))
+    plt.savefig(filename, bbox_inches = "tight")
+    plt.show()
+
+
+
+
+
+def plot_multiple_pr_curves(curves, num_edges, save_path):
+
+    plt.figure(figsize=(8, 6))
+
+    for label, list_pred, list_tp in curves:
+        precision = [tp / pred if pred != 0 else 0 for tp, pred in zip(list_tp, list_pred)]
+        recall = [tp / num_edges for tp in list_tp]
+        pr_auc = auc(recall, precision)
+        plt.plot(recall, precision, label=f"{label} (AUC = {pr_auc:.3f})", linewidth=2)
 
     plt.xlabel("Recall")
     plt.ylabel("Precision")
-    plt.title("Precision-Recall Curves")
-    plt.legend()
+    plt.title("Combined Precision-Recall Curve")
     plt.grid(True)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.legend(loc="upper right")
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.show()
+
+
+
+
+def pr_rec_rank(rank_file_path, test_set_path, step):
+    # Load the ground truth test set into a set of pairs
+    test_set = set()
+    with open(test_set_path, "r") as f:
+        for line in f:
+            i, j = line.strip().split()
+            test_set.add((int(i), int(j)))
+            test_set.add((int(j), int(i)))  # optional: make undirected
+
+    num_tp = 0
+    num_fp = 0
+    num_pred = 0
+
+    list_pred = []  # number of predictions
+    list_tp = []    # number of true positives
+    list_fp = []    # number of false positives
+
+    with open(rank_file_path, "r") as f:
+        for line in f:
+            i, j, label = line.strip().split()
+            pair = (int(i), int(j))
+            label = int(label)
+            num_pred += 1
+
+            if label == 1 and pair in test_set:
+                num_tp += 1
+            else:
+                num_fp += 1
+
+            if num_pred % step == 0:
+                list_pred.append(num_pred)
+                list_tp.append(num_tp)
+                list_fp.append(num_fp)
+
+    return list_pred, list_tp, list_fp
+
+
+
+
+def learning_phase(dataset_name, data_dir, train_dataset, val_dataset, scores_dir, learning_dir, pairs_dir):
+    from data_processing import potential_edges_distance3_only, sampling
+
+
+    full_data_set = data_dir / f"{dataset_name}.txt"
+    full_graph = load_data(full_data_set)
+    
+    
+    "split the dataset into three parts ( training, validation, testing)"
+    sampling(full_graph, 0.2, 0.2, dataset_name) 
+
+                            
+    "load the data as pairs"
+    train_graph = load_data(train_dataset)
+    
+
+    " generate candidate pairs from the training graph"
+    train_ael = el_to_ael(train_graph)
+    candidate_pairs_train = potential_edges_distance3_only(train_ael)
+    
+    
+    " write candidate pairs on a text file (as an edge)"
+    write_candidate_pairs_train(candidate_pairs_train, f"{dataset_name}", pairs_dir, force = False)
+   
+    " write candidate pairs on a file as an adjacency list "
+    candidate_pairs_train_adj = build_candidate_adj_list(candidate_pairs_train)
+    write_candidate_adj_train(candidate_pairs_train_adj, f"{dataset_name}", pairs_dir, force = False)
+    
+
+    " open the file, read the candidate pairs and calculate the scores and write the scores of the pairs in a file " 
+    " for each pair in the candidate pairs, calculate score then write in a file "
+
+    " ----------------------------------------------------- training phase ----------------------------------------------------------"
+    from methods import cra_scores, compute_all_L3Nf1
+    candidate_path = pairs_dir/f"candidate_train_adj_{dataset_name}.txt"
+    pairs_adj = read_candidate_adj_list(candidate_path)
+    cra_score = cra_scores(pairs_adj, train_ael)
+    write_cra_score_to_file(cra_score, scores_dir, f"cra_score_{dataset_name}.txt", force = False)
+
+   
+    l3N1_score = compute_all_L3Nf1(train_ael)
+    write_l3_score_to_file(l3N1_score, scores_dir, f"l3_score_{dataset_name}.txt", force = False) #this function writes the calculated scores into a file
+
+    cra_file = scores_dir / f"cra_score_{dataset_name}.txt"
+    l3n_file = scores_dir / f"l3_score_{dataset_name}.txt"
+
+    "creating the learning files to pass as inputs to the rank merging"
+    create_score_learning_txt_file(l3n_file, val_dataset, learning_dir / f"l3_learning_{dataset_name}.txt")
+    create_score_learning_txt_file(cra_file, val_dataset, learning_dir / f"cra_learning_{dataset_name}.txt")
+   
+
+    "calculate the maximum node pair"
+    files = [cra_file, l3n_file]
+    print(f"maximum number of nodes: {find_max_node_index(files)}") # 102800318
+    print(f"learning files: l3_learning_{dataset_name}.txt , cra_learning_{dataset_name}.txt")
+
+
+
+
+def testing_phase(dataset_name, train_dataset, val_dataset, combined_dataset , test_dataset, scores_dir, learning_dir, pairs_dir):
+
+    "first we need to combine training file and validation file, find candidate pairs from them, then see if they exist on test set"
+
+    combining_files(train_dataset, val_dataset, combined_dataset)
+   
+   
+    combined_graph = load_data(combined_dataset)
+    combined_ael = el_to_ael(combined_graph)
+    test_set = load_data(test_dataset)
+    test_set_ael = el_to_ael(test_set)
+
+    "generate candidate pairs from the combined graph"
+    from data_processing import potential_edges_distance3_only
+    candidate_pairs_test = potential_edges_distance3_only(combined_ael)
+    write_candidate_pairs_test(candidate_pairs_test, f"{dataset_name}", pairs_dir, force = False)
+
+    candidate_pairs_test_adj = build_candidate_adj_list(candidate_pairs_test) 
+    write_candidate_adj_test(candidate_pairs_test_adj, f"{dataset_name}", pairs_dir, force = False)
+    
+    "for each pair in the candidate pairs, calculate score then write in a file"
+    from methods import cra_scores, compute_all_L3Nf1
+    cra_score_combined = cra_scores(candidate_pairs_test_adj, combined_ael)
+    write_cra_score_to_file(cra_score_combined, scores_dir, f"cra_score_test_{dataset_name}.txt", force = False) 
+
+    l3_score_combined = compute_all_L3Nf1(combined_ael)
+    write_l3_score_to_file(l3_score_combined, scores_dir, f"l3_score_test_{dataset_name}.txt", force = False)
+ 
+
+
+
+    l3_score_test_file_name = scores_dir /f"l3_score_test_{dataset_name}.txt"
+    cra_score_test_file_name = scores_dir / f"cra_score_test_{dataset_name}.txt"
+
+    create_score_testing_txt_file(l3_score_test_file_name, test_dataset, learning_dir /f"l3_testing_{dataset_name}.txt")
+    create_score_testing_txt_file(cra_score_test_file_name, test_dataset, learning_dir /f"cra_testing_{dataset_name}.txt")
 
