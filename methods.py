@@ -4,57 +4,145 @@ from utils import *
 
 
 
+import itertools
+
 def cn_scores_v1(potential_adj_list, adj_list):
-    """ compute CN scores of all potential links in potential_adj_list using adj_list structure with set intersections """
     cn_scores = {}
-    for _ , potential_links in potential_adj_list.items():
-        for node_i, node_j in potential_links:
+    for k, potential_links in potential_adj_list.items():
+        for node_i, node_j in itertools.combinations(potential_links, 2):
             if (node_i, node_j) not in cn_scores and (node_j, node_i) not in cn_scores:
-                neighbors_i = set(adj_list[node_i])
-                neighbors_j = set(adj_list[node_j])
+                neighbors_i = set(adj_list.get(node_i, []))
+                neighbors_j = set(adj_list.get(node_j, []))
                 common_neighbors = neighbors_i.intersection(neighbors_j)
-                cn_score = len(common_neighbors)
-                cn_scores[(node_i, node_j)] = cn_score
+                cn_scores[(node_i, node_j)] = len(common_neighbors)
     return cn_scores
 
 
 
+def cn_score(x, y, adj_list):
+    neigh_x = set(adj_list.get(str(x), []))
+    neigh_y = set(adj_list.get(str(y), []))
 
-def cra_scores(potential_adj_list, adj_list):
+    common_neighbors = neigh_x & neigh_y
+    return len(common_neighbors)
+
+
+
+def cn_scores_from_paths(path_dict, adj_list):
+    scores = {}
+
+    for pair, path in path_dict.items():
+        if len(path) != 4:
+            continue  # skip malformed paths
+
+        u1, u2, u3, u4 = path
+
+        # Compute CN scores for (u1, u3) and (u2, u4)
+        score_1 = cn_score(u1, u3, adj_list)
+        score_2 = cn_score(u2, u4, adj_list)
+
+        scores[pair] = {
+            'path': path,
+            'cn(u1,u3)': score_1,
+            'cn(u2,u4)': score_2
+        }
+
+        print(f"For pair {pair} with path {path}: CN({u1},{u3}) = {score_1}, CN({u2},{u4}) = {score_2}")
+
+    return scores
+
+
+
+
+def get_neighbors(x, adj_list):
+    for nodes in adj_list:
+        if int(nodes) == int(x) :
+            return adj_list[nodes]
+        continue
+
+
+
+# def cra_scores(potential_adj_list, adj_list):
+#     """ compute CRA scores of all potential links in potential_adj_list using adj_list structure with set intersections """    
+#     cra_scores = {}
+#     for k, potential_links in potential_adj_list.items():
+#         for node_i, node_j in potential_links:
+#             if (node_i, node_j) not in cra_scores and (node_j, node_i) not in cra_scores:
+#                 neighbors_i = set(adj_list[node_i])
+#                 neighbors_j = set(adj_list[node_j])
+#                 common_neighbors = neighbors_i.intersection(neighbors_j)
+#                 cra_score = 0
+#                 for neighbor in common_neighbors:
+#                     neighbors_k = adj_list[neighbor] 
+#                     degree = len(neighbors_k)
+#                     if degree > 1:
+#                         gamma_neigh = common_neighbors.intersection(neighbors_k) 
+#                         cra_score +=  len(gamma_neigh) / degree
+#                 cra_scores[(node_i, node_j)] = cra_score
+#     return cra_scores
+
+import itertools
+def cra_score(potential_adj_list, adj_list):
     cra_scores = {}
-    neighbor_sets = {node: set(neighs) for node, neighs in adj_list.items()}
-    scored_pairs = set()
-
     for k, potential_links in potential_adj_list.items():
-        if len(potential_links) < 2:
-            continue
-
         for node_i, node_j in itertools.combinations(potential_links, 2):
-            key = tuple(sorted((node_i, node_j)))
-            if key in scored_pairs:
-                continue
-
-            scored_pairs.add(key)
-            neighbors_i = neighbor_sets.get(node_i, set())
-            neighbors_j = neighbor_sets.get(node_j, set())
-            common_neighbors = neighbors_i & neighbors_j
-
-            if not common_neighbors:
-                continue
-
-            cra_score = 0
-            for neighbor in common_neighbors:
-                neighbors_k = neighbor_sets.get(neighbor, set())
-                degree = len(neighbors_k)
-                if degree > 1:
-                    gamma_neigh = common_neighbors & neighbors_k
-                    if gamma_neigh:
+            if (node_i, node_j) not in cra_scores and (node_j, node_i) not in cra_scores:
+                neighbors_i = set(adj_list.get(node_i, []))
+                neighbors_j = set(adj_list.get(node_j, []))
+                common_neighbors = neighbors_i.intersection(neighbors_j)
+                cra_score = 0
+                for neighbor in common_neighbors:
+                    neighbors_k = adj_list.get(neighbor, [])
+                    degree = len(neighbors_k)
+                    if degree > 1:
+                        gamma_neigh = common_neighbors.intersection(neighbors_k)
                         cra_score += len(gamma_neigh) / degree
-
-            if cra_score > 0:
-                cra_scores[key] = cra_score
-
+                cra_scores[(node_i, node_j)] = cra_score
     return cra_scores
+
+
+
+
+
+
+
+
+# import itertools
+
+# def cra_scores(potential_adj_list, adj_list):
+#     cra_scores = {}
+#     neighbor_sets = {node: set(neighs) for node, neighs in adj_list.items()}
+#     scored_pairs = set()
+
+#     for k, potential_links in potential_adj_list.items():
+#         if len(potential_links) < 2:
+#             continue
+
+#         for node_i, node_j in itertools.combinations(potential_links, 2):
+#             key = tuple(sorted((node_i, node_j)))
+#             if key in scored_pairs or node_i == node_j:
+#                 continue
+#             scored_pairs.add(key)
+
+#             neighbors_i = neighbor_sets.get(node_i, set())
+#             neighbors_j = neighbor_sets.get(node_j, set())
+#             common_neighbors = neighbors_i & neighbors_j
+
+#             if not common_neighbors:
+#                 continue
+
+#             cra_score = 0
+#             for z in common_neighbors:
+#                 neighbors_z = neighbor_sets.get(z, set())
+#                 degree_z = len(neighbors_z)
+#                 if degree_z > 0:
+#                     contrib = len(neighbors_z & neighbors_i) * len(neighbors_z & neighbors_j) / degree_z
+#                     cra_score += contrib
+
+#             if cra_score > 0:
+#                 cra_scores[key] = cra_score
+
+#     return cra_scores
 
 
 
@@ -245,3 +333,21 @@ def compute_L3Nf2(x, y, neighbors, snd_neighbors):
     return term1 * term2 * term3
 
 
+def similarity_score(potential_pairs, ael):
+    
+   for key, path in potential_pairs.items():
+    # print(f"Key: {key}, Path: {path}")
+    
+    # path is a tuple like ('11', '0', '2', '28')
+    u1 = path[0]
+    u3 = path[2]
+    u2 = path[1]
+    u4 = path[3]
+    first_pair = (u1, u3)
+    second_pair = (u2, u4)
+
+    average_score = 0
+    first_pair_score = cn_score(int(first_pair[0]), int(first_pair[1]), ael)
+    second_pair_score = cn_score(int(second_pair[0]), int(second_pair[1]), ael)
+    average_score = (first_pair_score + second_pair_score) / 2 
+    print(f"pair {key}: {average_score}")

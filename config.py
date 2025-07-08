@@ -15,5 +15,3 @@ TRAIN_DATASET = DATASET_DIR / f"train_edges_{DATASET_NAME}.txt"
 VAL_DATASET = DATASET_DIR / f"val_edges_{DATASET_NAME}.txt"
 TEST_DATASET = DATASET_DIR / f"test_edges_{DATASET_NAME}.txt"
 COMBINED_DATASET = PAIRS_DIR / f"combined_{DATASET_NAME}.txt"
-
-

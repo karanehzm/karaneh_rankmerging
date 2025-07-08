@@ -55,8 +55,13 @@ def count_nodes(graph):
 
        
 
-def count_edges(graph):
-    return len(graph)
+
+def count_edges(ael):
+    # ael = el_to_ael(graph)
+    num = 0
+    for node in ael:
+        num += len(ael[node])
+    return num//2
 
 
 def ael_to_el(ael):
@@ -73,23 +78,7 @@ def ael_to_el(ael):
 
     return edge_list
 
-   
 
-# def el_to_ael(graph):
-#     """ transform graph to ael """
-#     ael = dict()
-#     for node,neigh in graph:
-#         if node in ael:
-#             if neigh not in ael[node]:
-#                 ael[node].append(neigh)
-#         else:
-#             ael[node] = [neigh]
-#         if neigh in ael:
-#             if node not in ael[neigh]:
-#                 ael[neigh].append(node)
-#         else:
-#             ael[neigh] = [node]
-#     return ael
 
 def el_to_ael(graph):
     """Transform edge list to adjacency list (ael) with string node IDs and undirected structure"""
@@ -264,6 +253,22 @@ def write_cra_score_to_file(cra_scores, path, fileName, force = False):
 
 
 
+def write_cn_score_to_file(cn_scores, path, fileName, force = False):
+    path = Path(path)
+    full_path = path / fileName
+    path.mkdir(parents=True, exist_ok = True) #to ensure if the directory exists
+    if full_path.exists() and not force:
+        print(f"File {full_path} already exists. Skipping write.")
+       
+    
+    sorted_scores = sorted(cn_scores.items(), key = lambda x : x[1], reverse= True)
+    with open(full_path, "w") as f:
+        for (u,v), score in sorted_scores:
+            line = f"{u} {v} {score}\n"
+            f.write(line)
+
+
+
 def write_l3_score_to_file(l3_scores, path, fileName, force = False):
     path = Path(path)
     full_path = path / fileName
@@ -398,7 +403,8 @@ def sorting_scores(score_tab):
 
 
 def tp_fp(score_lst, test_ael, num_pred_max, step):
-    """ generate a triplet of lists with the number of predictions, number of TP predictions , number of FP predictions every step until num_pred_max """
+    """ generate a triplet of lists with the number of predictions, number of TP predictions
+      , number of FP predictions every step until num_pred_max """
     list_tp = []
     list_fp = []
     list_pred = []
@@ -420,7 +426,38 @@ def tp_fp(score_lst, test_ael, num_pred_max, step):
             list_fp.append(num_fp)
             list_pred.append(num_pred)
     return list_pred, list_tp, list_fp
-    
+
+
+# def tp_fp(score_lst, test_set, num_pred_max, step):
+#     """
+#     score_lst: list of ((i, j), score) sorted in descending order
+#     test_set: set of undirected pairs (i, j) or (j, i)
+#     Returns: list_pred, list_tp, list_fp
+#     """
+#     list_tp = []
+#     list_fp = []
+#     list_pred = []
+
+#     num_pred = 0
+#     num_tp = 0
+#     num_fp = 0
+
+#     for pred in score_lst[:num_pred_max + 1]:
+#         (i, j), score = pred
+
+#         if (i, j) in test_set or (j, i) in test_set:
+#             num_tp += 1
+#         else:
+#             num_fp += 1
+
+#         num_pred += 1
+
+#         if (num_pred - 1) % step == 0:
+#             list_tp.append(num_tp)
+#             list_fp.append(num_fp)
+#             list_pred.append(num_pred)
+
+#     return list_pred, list_tp, list_fp
 
 
 
@@ -512,15 +549,48 @@ def register_image (filename, tab1, tab2):
 
 
 
-def plot_multiple_pr_curves(curves, num_edges, save_path):
+# def plot_multiple_pr_curves(curves, num_edges, save_path):
 
+#     plt.figure(figsize=(8, 6))
+
+#     for label, list_pred, list_tp in curves:
+#         precision = [tp / pred if pred != 0 else 0 for tp, pred in zip(list_tp, list_pred)]
+#         recall = [tp / num_edges for tp in list_tp]
+#         pr_auc = auc(recall, precision)
+#         plt.plot(recall, precision, label=f"{label} (AUC = {pr_auc:.3f})", linewidth=2)
+
+#     plt.xlabel("Recall")
+#     plt.ylabel("Precision")
+#     plt.title("Combined Precision-Recall Curve")
+#     plt.grid(True)
+#     plt.xlim([0.0, 1.0])
+#     plt.ylim([0.0, 1.05])
+#     plt.legend(loc="upper right")
+#     plt.tight_layout()
+#     plt.savefig(save_path)
+#     plt.show()
+
+from sklearn.metrics import auc
+import matplotlib.pyplot as plt
+
+def plot_multiple_pr_curves(curves, num_edges, save_path):
     plt.figure(figsize=(8, 6))
 
     for label, list_pred, list_tp in curves:
+        # Calculate precision and recall
         precision = [tp / pred if pred != 0 else 0 for tp, pred in zip(list_tp, list_pred)]
-        recall = [tp / num_edges for tp in list_tp]
-        pr_auc = auc(recall, precision)
-        plt.plot(recall, precision, label=f"{label} (AUC = {pr_auc:.3f})", linewidth=2)
+        recall = [tp / num_edges if num_edges != 0 else 0 for tp in list_tp]
+
+        # Check if there's at least 2 distinct points to compute AUC
+        if len(recall) >= 2 and len(set(recall)) > 1 and len(set(precision)) > 1:
+            pr_auc = auc(recall, precision)
+            plt.plot(recall, precision, label=f"{label} (AUC = {pr_auc:.3f})", linewidth=2)
+        elif len(recall) == 1:
+            # Single point: still plot it as a dot
+            plt.plot(recall, precision, marker='o', label=f"{label} (1 point)", linewidth=2)
+            print(f"Only 1 point for '{label}', AUC not computed.")
+        else:
+            print(f"Skipping '{label}' — not enough distinct points for AUC.")
 
     plt.xlabel("Recall")
     plt.ylabel("Precision")
@@ -532,8 +602,6 @@ def plot_multiple_pr_curves(curves, num_edges, save_path):
     plt.tight_layout()
     plt.savefig(save_path)
     plt.show()
-
-
 
 
 def pr_rec_rank(rank_file_path, test_set_path, step):
@@ -575,6 +643,9 @@ def pr_rec_rank(rank_file_path, test_set_path, step):
 
 
 
+
+
+
 def learning_phase(dataset_name, data_dir, train_dataset, val_dataset, scores_dir, learning_dir, pairs_dir):
     from data_processing import potential_edges_distance3_only, sampling
 
@@ -608,29 +679,32 @@ def learning_phase(dataset_name, data_dir, train_dataset, val_dataset, scores_di
     " for each pair in the candidate pairs, calculate score then write in a file "
 
     " ----------------------------------------------------- training phase ----------------------------------------------------------"
-    from methods import cra_scores, compute_all_L3Nf1
+    from methods import cra_score, compute_all_L3Nf1, cn_scores_v1
     candidate_path = pairs_dir/f"candidate_train_adj_{dataset_name}.txt"
     pairs_adj = read_candidate_adj_list(candidate_path)
-    cra_score = cra_scores(pairs_adj, train_ael)
-    write_cra_score_to_file(cra_score, scores_dir, f"cra_score_{dataset_name}.txt", force = False)
 
-   
+    cra_scores = cra_score(pairs_adj, train_ael)
+    cn_scores = cn_scores_v1(pairs_adj, train_ael)
     l3N1_score = compute_all_L3Nf1(train_ael)
+    
+    write_cra_score_to_file(cra_scores, scores_dir, f"cra_score_{dataset_name}.txt", force = False)
+    write_cn_score_to_file(cn_scores, scores_dir, f"cn_score_{dataset_name}.txt", force = False)
     write_l3_score_to_file(l3N1_score, scores_dir, f"l3_score_{dataset_name}.txt", force = False) #this function writes the calculated scores into a file
 
     cra_file = scores_dir / f"cra_score_{dataset_name}.txt"
     l3n_file = scores_dir / f"l3_score_{dataset_name}.txt"
+    cn_file = scores_dir / f"cn_score_{dataset_name}.txt"
 
     "creating the learning files to pass as inputs to the rank merging"
     create_score_learning_txt_file(l3n_file, val_dataset, learning_dir / f"l3_learning_{dataset_name}.txt")
     create_score_learning_txt_file(cra_file, val_dataset, learning_dir / f"cra_learning_{dataset_name}.txt")
-   
+    create_score_learning_txt_file(cn_file, val_dataset, learning_dir / f"cn_learning_{dataset_name}.txt")
+
 
     "calculate the maximum node pair"
     files = [cra_file, l3n_file]
     print(f"maximum number of nodes: {find_max_node_index(files)}") # 102800318
-    print(f"learning files: l3_learning_{dataset_name}.txt , cra_learning_{dataset_name}.txt")
-
+    print(f"learning files: l3_learning_{dataset_name}.txt , cra_learning_{dataset_name}.txt , cn_learning_{dataset_name}.txt")
 
 
 
@@ -655,19 +729,42 @@ def testing_phase(dataset_name, train_dataset, val_dataset, combined_dataset , t
     write_candidate_adj_test(candidate_pairs_test_adj, f"{dataset_name}", pairs_dir, force = False)
     
     "for each pair in the candidate pairs, calculate score then write in a file"
-    from methods import cra_scores, compute_all_L3Nf1
-    cra_score_combined = cra_scores(candidate_pairs_test_adj, combined_ael)
+    from methods import cra_score, compute_all_L3Nf1, cn_scores_v1
+
+    cra_score_combined = cra_score(candidate_pairs_test_adj, combined_ael)
     write_cra_score_to_file(cra_score_combined, scores_dir, f"cra_score_test_{dataset_name}.txt", force = False) 
 
     l3_score_combined = compute_all_L3Nf1(combined_ael)
     write_l3_score_to_file(l3_score_combined, scores_dir, f"l3_score_test_{dataset_name}.txt", force = False)
  
+    cn_score_combined = cn_scores_v1(candidate_pairs_test_adj, combined_ael)
+    write_cn_score_to_file(cn_score_combined, scores_dir, f"cn_score_test_{dataset_name}.txt", force = False)
 
 
 
     l3_score_test_file_name = scores_dir /f"l3_score_test_{dataset_name}.txt"
     cra_score_test_file_name = scores_dir / f"cra_score_test_{dataset_name}.txt"
+    cn_score_test_file_name = scores_dir / f"cn_score_test_{dataset_name}.txt"
+
 
     create_score_testing_txt_file(l3_score_test_file_name, test_dataset, learning_dir /f"l3_testing_{dataset_name}.txt")
     create_score_testing_txt_file(cra_score_test_file_name, test_dataset, learning_dir /f"cra_testing_{dataset_name}.txt")
+    create_score_testing_txt_file(cn_score_test_file_name, test_dataset, learning_dir / f"cn_testing_{dataset_name}.txt")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

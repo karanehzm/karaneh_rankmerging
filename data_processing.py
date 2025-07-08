@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
-from methods import cra_scores, l3_scores
+from methods import cra_score, l3_scores, cn_scores_v1
 import networkx as nx
 from utils import * 
 
@@ -148,27 +148,41 @@ def create_potential_adj_list(adj_list):
 
 
 def potential_edges_distance3_only(adj_list):
-    
-    potential_edges = set()
+    potential_edges_with_paths = {}
     existing_edges = set()
 
-    # Collect all existing edges (for direct connection check)
+    # Ensure all nodes are strings
+    adj_list = {str(k): set(map(str, v)) for k, v in adj_list.items()}
+
+    # Record existing edges
     for u in adj_list:
         for v in adj_list[u]:
             existing_edges.add(tuple(sorted((u, v))))
 
+    # Search for length-3 potential links
     for u in adj_list:
-        for x in adj_list[u]:  # 1 hop from u
-            for y in adj_list[x]:  # 2 hops from u
-                if y == u:
+        for x in adj_list[u]:  # 1-hop
+            if x not in adj_list:
+                continue
+            for y in adj_list[x]:  # 2-hop
+                if y == u or y not in adj_list:
                     continue
-                for v in adj_list[y]:  # 3 hops from u
-                    if v != u and v not in adj_list[u]:  # not directly connected
-                        edge = tuple(sorted((u, v)))
-                        if edge not in existing_edges:
-                            potential_edges.add(edge)
+                for v in adj_list[y]:  # 3-hop
+                    if v != u and v not in adj_list[u]:
+                        key = tuple(sorted((u, v)))
+                        path = (u, x, y, v)
 
-    return potential_edges
+                        if key not in existing_edges and key not in potential_edges_with_paths:
+                            # Fix direction to match key
+                            if key[0] == u:
+                                ordered_path = path
+                            else:
+                                ordered_path = path[::-1]  # reverse path
+
+                            potential_edges_with_paths[key] = ordered_path
+                            
+    return potential_edges_with_paths
+
 
 
 
@@ -189,22 +203,21 @@ def second_neighbors(ael):
 
 
 
-def compute_scaling_factor(learning_file, test_file):
+def compute_scaling_factor_multiple(learning_files, testing_files):
     def count_lines(filepath):
         with open(filepath, 'r') as f:
             return sum(1 for _ in f)
 
-    n_learn = count_lines(learning_file)
-    n_test = count_lines(test_file)
-    
+    n_learn = sum(count_lines(f) for f in learning_files)
+    n_test = sum(count_lines(f) for f in testing_files)
+
     if n_learn == 0:
         raise ValueError("Learning set is empty; cannot compute scaling factor.")
-    
+
     s = n_test / n_learn
-    print(f"n_learn = {n_learn}")
-    print(f"n_test = {n_test}")
-    print(f"Scaling factor s = n_test / n_learn = {s:.3f}")
-    
+    # print(f"Total learning pairs: {n_learn}")
+    # print(f"Total testing pairs: {n_test}")
+    # print(f"Scaling factor s = {s:.3f}")
     return s
 
 
