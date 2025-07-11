@@ -413,7 +413,7 @@ def tp_fp(score_lst, test_ael, num_pred_max, step):
     num_tp = 0
     num_fp = 0
     
-    for pred in score_lst[:num_pred_max+1] :
+    for pred in score_lst[:num_pred_max] :
         (i,j), score = pred
         if i in test_ael and j in test_ael[i]:
             num_tp += 1
@@ -508,6 +508,8 @@ def tp_fp_rank(rank_file_path, test_set_path, num_pred_max, step):
                 num_fp += 1
 
             num_pred += 1
+
+           
 
             if (num_pred - 1) % step == 0:
                 list_pred.append(num_pred)
@@ -684,27 +686,28 @@ def learning_phase(dataset_name, data_dir, train_dataset, val_dataset, scores_di
     pairs_adj = read_candidate_adj_list(candidate_path)
 
     cra_scores = cra_score(pairs_adj, train_ael)
-    cn_scores = cn_scores_v1(pairs_adj, train_ael)
+    # cn_scores = cn_scores_v1(pairs_adj, train_ael)
     l3N1_score = compute_all_L3Nf1(train_ael)
     
     write_cra_score_to_file(cra_scores, scores_dir, f"cra_score_{dataset_name}.txt", force = False)
-    write_cn_score_to_file(cn_scores, scores_dir, f"cn_score_{dataset_name}.txt", force = False)
+    # write_cn_score_to_file(cn_scores, scores_dir, f"cn_score_{dataset_name}.txt", force = False)
     write_l3_score_to_file(l3N1_score, scores_dir, f"l3_score_{dataset_name}.txt", force = False) #this function writes the calculated scores into a file
 
     cra_file = scores_dir / f"cra_score_{dataset_name}.txt"
     l3n_file = scores_dir / f"l3_score_{dataset_name}.txt"
-    cn_file = scores_dir / f"cn_score_{dataset_name}.txt"
+    # cn_file = scores_dir / f"cn_score_{dataset_name}.txt"
 
     "creating the learning files to pass as inputs to the rank merging"
     create_score_learning_txt_file(l3n_file, val_dataset, learning_dir / f"l3_learning_{dataset_name}.txt")
     create_score_learning_txt_file(cra_file, val_dataset, learning_dir / f"cra_learning_{dataset_name}.txt")
-    create_score_learning_txt_file(cn_file, val_dataset, learning_dir / f"cn_learning_{dataset_name}.txt")
+    # create_score_learning_txt_file(cn_file, val_dataset, learning_dir / f"cn_learning_{dataset_name}.txt")
 
 
     "calculate the maximum node pair"
     files = [cra_file, l3n_file]
     print(f"maximum number of nodes: {find_max_node_index(files)}") # 102800318
-    print(f"learning files: l3_learning_{dataset_name}.txt , cra_learning_{dataset_name}.txt , cn_learning_{dataset_name}.txt")
+    print(f"learning files: l3_learning_{dataset_name}.txt , cra_learning_{dataset_name}.txt")
+    # cn_learning_{dataset_name}.txt
 
 
 
@@ -737,19 +740,19 @@ def testing_phase(dataset_name, train_dataset, val_dataset, combined_dataset , t
     l3_score_combined = compute_all_L3Nf1(combined_ael)
     write_l3_score_to_file(l3_score_combined, scores_dir, f"l3_score_test_{dataset_name}.txt", force = False)
  
-    cn_score_combined = cn_scores_v1(candidate_pairs_test_adj, combined_ael)
-    write_cn_score_to_file(cn_score_combined, scores_dir, f"cn_score_test_{dataset_name}.txt", force = False)
+    # cn_score_combined = cn_scores_v1(candidate_pairs_test_adj, combined_ael)
+    # write_cn_score_to_file(cn_score_combined, scores_dir, f"cn_score_test_{dataset_name}.txt", force = False)
 
 
 
     l3_score_test_file_name = scores_dir /f"l3_score_test_{dataset_name}.txt"
     cra_score_test_file_name = scores_dir / f"cra_score_test_{dataset_name}.txt"
-    cn_score_test_file_name = scores_dir / f"cn_score_test_{dataset_name}.txt"
+    # cn_score_test_file_name = scores_dir / f"cn_score_test_{dataset_name}.txt"
 
 
     create_score_testing_txt_file(l3_score_test_file_name, test_dataset, learning_dir /f"l3_testing_{dataset_name}.txt")
     create_score_testing_txt_file(cra_score_test_file_name, test_dataset, learning_dir /f"cra_testing_{dataset_name}.txt")
-    create_score_testing_txt_file(cn_score_test_file_name, test_dataset, learning_dir / f"cn_testing_{dataset_name}.txt")
+    # create_score_testing_txt_file(cn_score_test_file_name, test_dataset, learning_dir / f"cn_testing_{dataset_name}.txt")
 
 
 

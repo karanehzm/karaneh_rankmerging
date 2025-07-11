@@ -62,46 +62,48 @@ def get_neighbors(x, adj_list):
 
 
 
-# def cra_scores(potential_adj_list, adj_list):
-#     """ compute CRA scores of all potential links in potential_adj_list using adj_list structure with set intersections """    
+# import itertools
+# def cra_score(potential_adj_list, adj_list):
 #     cra_scores = {}
 #     for k, potential_links in potential_adj_list.items():
-#         for node_i, node_j in potential_links:
+#         for node_i, node_j in itertools.combinations(potential_links, 2):
 #             if (node_i, node_j) not in cra_scores and (node_j, node_i) not in cra_scores:
-#                 neighbors_i = set(adj_list[node_i])
-#                 neighbors_j = set(adj_list[node_j])
+#                 neighbors_i = set(adj_list.get(node_i, []))
+#                 neighbors_j = set(adj_list.get(node_j, []))
 #                 common_neighbors = neighbors_i.intersection(neighbors_j)
 #                 cra_score = 0
 #                 for neighbor in common_neighbors:
-#                     neighbors_k = adj_list[neighbor] 
+#                     neighbors_k = adj_list.get(neighbor, [])
 #                     degree = len(neighbors_k)
 #                     if degree > 1:
-#                         gamma_neigh = common_neighbors.intersection(neighbors_k) 
-#                         cra_score +=  len(gamma_neigh) / degree
+#                         gamma_neigh = common_neighbors.intersection(neighbors_k)
+#                         cra_score += len(gamma_neigh) / degree
 #                 cra_scores[(node_i, node_j)] = cra_score
 #     return cra_scores
 
-import itertools
+
 def cra_score(potential_adj_list, adj_list):
+    """ compute CRA scores of all potential links in potential_adj_list using adj_list structure with set intersections """
     cra_scores = {}
     for k, potential_links in potential_adj_list.items():
-        for node_i, node_j in itertools.combinations(potential_links, 2):
-            if (node_i, node_j) not in cra_scores and (node_j, node_i) not in cra_scores:
-                neighbors_i = set(adj_list.get(node_i, []))
-                neighbors_j = set(adj_list.get(node_j, []))
-                common_neighbors = neighbors_i.intersection(neighbors_j)
-                cra_score = 0
-                for neighbor in common_neighbors:
-                    neighbors_k = adj_list.get(neighbor, [])
-                    degree = len(neighbors_k)
-                    if degree > 1:
-                        gamma_neigh = common_neighbors.intersection(neighbors_k)
-                        cra_score += len(gamma_neigh) / degree
-                cra_scores[(node_i, node_j)] = cra_score
+        for idx1 in range(len(potential_links)):
+            for idx2 in range(idx1 + 1, len(potential_links)):
+                node_i = potential_links[idx1]
+                node_j = potential_links[idx2]
+                
+                if (node_i, node_j) not in cra_scores and (node_j, node_i) not in cra_scores:
+                    neighbors_i = set(adj_list.get(node_i, []))
+                    neighbors_j = set(adj_list.get(node_j, []))
+                    common_neighbors = neighbors_i.intersection(neighbors_j)
+                    score = 0
+                    for neighbor in common_neighbors:
+                        neighbors_k = adj_list.get(neighbor, [])
+                        degree = len(neighbors_k)
+                        if degree > 1:
+                            gamma_neigh = common_neighbors.intersection(neighbors_k)
+                            score += len(gamma_neigh) / degree
+                    cra_scores[(node_i, node_j)] = score
     return cra_scores
-
-
-
 
 
 

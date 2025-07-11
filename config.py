@@ -1,8 +1,9 @@
 from pathlib import Path
 
 
-# DATASET_NAME = "heinetal-rec"
-DATASET_NAME = "human_ppi_lcqb_s900"
+DATASET_NAME = "heinetal-rec"
+# DATASET_NAME = "human_ppi_lcqb_s900"
+# DATASET_NAME = "karate_club"
 BASE_DIR = Path("/Users/karanehzolfaghari/Desktop/PPI_code/codes_karaneh_ppi")
 DATA_DIR = BASE_DIR / "data_repository"
 RANKMERGING_DIR = BASE_DIR / "Complementarity_rankmerging"
