@@ -152,6 +152,4 @@ This will:
 ## Author
 
 **Karaneh Zolfaghari Moghaddam**  
-M.Sc. Computer Networks & IoT — CNAM Paris / Sorbonne Université  
-French Government Eiffel Excellence Scholar (2023)  
 [github.com/karanehzm](https://github.com/karanehzm) · karanehzolfaghari@gmail.com
