@@ -9,7 +9,7 @@ Defended: October 2025
 
 ## Overview
 
-Protein–protein interaction (PPI) networks are fundamentally incomplete — less than 10% of human
+Protein–protein interaction (PPI) networks are fundamentally incomplete, less than 10% of human
 protein interactions have been experimentally confirmed. This project builds a **reproducible
 pipeline** to predict missing links in PPI networks by combining multiple graph-theoretic scoring
 methods through supervised rank aggregation.
@@ -37,13 +37,13 @@ compatibility signal; CN does not.
 
 ### Supervised Rank Aggregation
 
-**RankMerging** (Tabourier et al., 2019) — a learning-to-rank framework that merges several
+**RankMerging** (Tabourier et al., 2019), a learning-to-rank framework that merges several
 unsupervised rankings into a single, more accurate ordering.
 
 - Each weak learner produces a ranked list of candidate protein pairs
 - A sliding window of size `g` estimates the local hit rate of each ranking
 - The method learns *where* each heuristic is most reliable along the list
-- At test time, the learned mixing profile is replayed — **no labels required**
+- At test time, the learned mixing profile is replayed  **no labels required**
 - Time complexity: O(α · θ), linear in the number of input rankings and output length
 
 ---
@@ -112,7 +112,7 @@ cd karaneh_rankmerging
 pip install numpy pandas matplotlib scikit-learn networkx
 ```
 
-**Configure your experiment** in `config.py` — set `DATASET_NAME`, data paths, and directories.
+**Configure your experiment** in `config.py` , set `DATASET_NAME`, data paths, and directories.
 
 **Run the pipeline:**
 
