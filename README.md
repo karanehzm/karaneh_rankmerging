@@ -3,7 +3,7 @@
 
 **Master's Thesis — LIP6, Sorbonne Université / CNAM Paris**  
 Supervised by [Prof. Lionel Tabourier](https://lip6.fr) · Complex Networks Team, LIP6  
-Defended: September 2025
+Defended: October 2025
 
 ---
 
